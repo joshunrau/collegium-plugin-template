@@ -1,0 +1,32 @@
+{
+  "name": "example",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "license": "Unlicense",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "format": "prettier --write .",
+    "lint": "tsc && eslint --fix .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@collegium/sdk": "^0.0.1-beta.7",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^24.x",
+    "eslint": "^9.39.2",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-perfectionist": "^5.8.0",
+    "globals": "^17.12.0",
+    "prettier": "^3.8.1",
+    "typescript": "6.0.x",
+    "typescript-eslint": "^8.66.0",
+    "vitest": "^4.1.10"
+  }
+}
