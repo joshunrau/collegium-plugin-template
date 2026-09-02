@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@collegium/sdk':
-        specifier: ^0.0.1-beta.8
-        version: 0.0.1-beta.8(zod@4.5.4)
+        specifier: ^0.0.1-beta.9
+        version: 0.0.1-beta.9(zod@4.5.4)
       zod:
         specifier: ^4.4.3
         version: 4.5.4
@@ -48,8 +48,8 @@ importers:
 
 packages:
 
-  '@collegium/sdk@0.0.1-beta.8':
-    resolution: {integrity: sha512-9q/0rks+sMTmPcxC0HzwznINcHn6wcrdPApeqbV7PyL0ARJ+4/28gLUhSyU8CX3DjskjSXemZxdq6AsrM+Mz4w==}
+  '@collegium/sdk@0.0.1-beta.9':
+    resolution: {integrity: sha512-slvLCBqFPWGcAO0rCdTFuC7CfV6DTcapb2X560QrO7+0LC2dIXe/dGt44pW3J18hQN7C0dHFLZAO9XS3UbL4lQ==}
     engines: {node: 24.x}
     peerDependencies:
       zod: ^4.4.3
@@ -1122,7 +1122,7 @@ packages:
 
 snapshots:
 
-  '@collegium/sdk@0.0.1-beta.8(zod@4.5.4)':
+  '@collegium/sdk@0.0.1-beta.9(zod@4.5.4)':
     dependencies:
       type-fest: 5.9.0
       zod: 4.5.4

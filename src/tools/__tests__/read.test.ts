@@ -5,10 +5,10 @@ import config from '../../config.ts';
 import read from '../read.ts';
 
 describe('example::read', () => {
-  it('returns the body of a stored record', async () => {
+  it('returns one record by id', async () => {
     const context = createTestContext(config);
-    await context.storage.records.put('greeting', { body: 'hello' });
-    expect(await read.execute({ id: 'greeting' }, context)).toBe('hello');
+    await context.storage.records.create({ body: 'hello', id: 'greeting', topic: 'chat' });
+    expect(await read.execute({ id: 'greeting' }, context)).toBe('greeting (chat): hello');
   });
 
   it('reports a record that does not exist', async () => {
@@ -16,10 +16,10 @@ describe('example::read', () => {
     expect(await read.execute({ id: 'missing' }, context)).toBe('record "missing" not found');
   });
 
-  it('lists every record under a header', async () => {
-    const context = createTestContext(config, { settings: { maxRecords: 5 } });
-    await context.storage.records.put('first', { body: 'one' });
-    await context.storage.records.put('second', { body: 'two' });
-    expect(await read.execute({}, context)).toBe('2/5 records\n- first: one\n- second: two');
+  it('narrows the listing to one topic', async () => {
+    const context = createTestContext(config);
+    await context.storage.records.create({ body: 'one', id: 'first', topic: 'chat' });
+    await context.storage.records.create({ body: 'two', id: 'second', topic: 'notes' });
+    expect(await read.execute({ topic: 'notes' }, context)).toBe('1 records\n- second (notes): two');
   });
 });

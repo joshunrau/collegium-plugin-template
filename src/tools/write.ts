@@ -2,19 +2,19 @@ import { defineTool } from '@collegium/sdk';
 import { z } from 'zod';
 
 export default defineTool({
-  approval: (args) => ({ body: `write record "${args.id}": ${args.body}`, presentation: 'verbatim' }),
-  description: 'Store a record under an id.',
+  approval: (args) => ({ body: `file under "${args.topic}": ${args.body}`, presentation: 'verbatim' }),
+  description: 'Store a record under a topic. The store mints its id, which is returned.',
   execute: async (args, { err, settings, storage }) => {
-    const existing = await storage.records.list();
+    const existing = await storage.records.findMany();
     if (existing.length >= settings.maxRecords) {
       err.invalidArguments(`record limit of ${settings.maxRecords} reached`);
     }
-    await storage.records.put(args.id, { body: args.body });
-    return `record ${args.id} written`;
+    const record = await storage.records.create({ body: args.body, topic: args.topic });
+    return `record ${record.id} written`;
   },
   parameters: z.object({
     body: z.string().min(1).describe('The text to store'),
-    id: z.string().min(1).describe('A short identifier to store the record under')
+    topic: z.string().min(1).describe('A short subject to file the record under')
   }),
-  traceDetail: (args) => `${args.id}: ${args.body}`
+  traceDetail: (args) => `${args.topic}: ${args.body}`
 });

@@ -13,7 +13,8 @@ const config = defineConfig({
   }),
   storage: {
     records: z.object({
-      body: z.string().min(1)
+      body: z.string().min(1),
+      topic: z.string().min(1)
     })
   }
 });

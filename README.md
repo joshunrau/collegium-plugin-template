@@ -27,7 +27,13 @@ The deployment reads `src/config.ts`, the direct children of `src/tools/`, and t
 
 ### Config
 
-`src/config.ts` default-exports `defineConfig` with two optional keys. `settings` is the schema an agent's `toolSettings` for this plugin are parsed against. `storage` names one collection per key. The deployment validates every write against the collection's schema and scopes the rows to your plugin. The `declare module` block below the config types `settings` and `storage` in every tool.
+`src/config.ts` default-exports `defineConfig` with two optional keys. `settings` is the schema an agent's `toolSettings` for this plugin are parsed against. `storage` names one record collection per key, whose schema is the fields a record declares. The store stamps `id`, `createdAt`, and `updatedAt` on every record — a schema may not declare those — mints a cuid2 unless `create` is given an id, and parses every read, so a row an older schema wrote fails loudly instead of reaching a tool. Rows are scoped to your plugin.
+
+A collection handle is `create`, `findById`, `findMany`, `updateById`, and `deleteById`. `findMany` without a query returns every record in insertion order; with one it takes `limit` and a `where` that ANDs conditions over the record's own top-level scalar fields — a value for equality, `{ in: [...] }` for membership, `{ contains: '...' }` for a case-insensitive substring of a string field. An object, array, or date field is not queryable.
+
+````ts
+const recent = await storage.records.findMany({ limit: 20, where: { body: { contains: 'invoice' }, topic: 'billing' } });
+``` The `declare module` block below the config types `settings` and `storage` in every tool.
 
 ### Tools
 
@@ -52,16 +58,16 @@ Each `src/skills/<name>.md` is a markdown document with `title` and `description
 pnpm lint      # tsc, then eslint --fix
 pnpm test      # vitest
 pnpm format    # prettier --write
-```
+````
 
-Tests live under `src/tools/__tests__/` and call a tool's `execute` directly. `createTestContext` from `@collegium/sdk/testing` builds the context a tool receives from your config: in-memory storage for every declared collection, validated on write and parsed on read as the deployment's store does, settings parsed through your schema so defaults apply, and the `err` raisers a deployment hands out, which throw `PluginToolFailureError`. Pass `turn` in the options to change the agent, channel, or post the tool sees.
+Tests live under `src/tools/__tests__/` and call a tool's `execute` directly. `createTestContext` from `@collegium/sdk/testing` builds the context a tool receives from your config: in-memory storage for every declared collection, stamped, validated on write, and parsed on read as the deployment's store does — seed it by calling `create` on the context, passing an `id` when a test needs a known one, settings parsed through your schema so defaults apply, and the `err` raisers a deployment hands out, which throw `PluginToolFailureError`. Pass `turn` in the options to change the agent, channel, or post the tool sees.
 
 ```ts
 import { createTestContext, PluginToolFailureError } from '@collegium/sdk/testing';
 
 const context = createTestContext(config, { settings: { maxRecords: 1 } });
-await write.execute({ body: 'one', id: 'first' }, context);
-await expect(write.execute({ body: 'two', id: 'second' }, context)).rejects.toThrow(PluginToolFailureError);
+await write.execute({ body: 'one', topic: 'chat' }, context);
+await expect(write.execute({ body: 'two', topic: 'chat' }, context)).rejects.toThrow(PluginToolFailureError);
 ```
 
 CI runs the same checks plus `prettier --check` on every push and pull request.
