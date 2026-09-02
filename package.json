@@ -14,7 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@collegium/sdk": "^0.0.1-beta.7",
+    "@collegium/sdk": "^0.0.1-beta.8",
     "zod": "^4.4.3"
   },
   "devDependencies": {

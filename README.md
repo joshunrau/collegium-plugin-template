@@ -21,7 +21,6 @@ src/
   config.ts             the settings schema and the storage collections
   tools/<name>.ts       one tool per file, named by its filename
   skills/<name>.md      one skill per file, granted as <plugin>::<name>
-  testing/context.ts    a fake tool context for tests; not part of the plugin
 ```
 
 The deployment reads `src/config.ts`, the direct children of `src/tools/`, and the direct children of `src/skills/`. Every child of `src/tools/` must be `<snake_case>.ts` with no further extension. Every child of `src/skills/` must be `<dashed-name>.md`. A file that breaks either rule stops the deployment from booting; nothing is skipped. Subdirectories such as `src/tools/__tests__/` are yours, and the deployment ignores them. Put shared helpers anywhere else under `src/` and import them by relative path.
@@ -55,12 +54,14 @@ pnpm test      # vitest
 pnpm format    # prettier --write
 ```
 
-Tests live under `src/tools/__tests__/` and call a tool's `execute` directly. `createTestContext` in `src/testing/context.ts` builds the context a tool receives: in-memory storage for every collection declared in `src/config.ts`, settings parsed through your schema so defaults apply, an `err` whose raisers throw `TestToolFailure`, and a stub turn. Adding a collection or a setting needs no change to the helper.
+Tests live under `src/tools/__tests__/` and call a tool's `execute` directly. `createTestContext` from `@collegium/sdk/testing` builds the context a tool receives from your config: in-memory storage for every declared collection, validated on write and parsed on read as the deployment's store does, settings parsed through your schema so defaults apply, and the `err` raisers a deployment hands out, which throw `PluginToolFailureError`. Pass `turn` in the options to change the agent, channel, or post the tool sees.
 
 ```ts
-const context = createTestContext({ settings: { maxRecords: 1 } });
+import { createTestContext, PluginToolFailureError } from '@collegium/sdk/testing';
+
+const context = createTestContext(config, { settings: { maxRecords: 1 } });
 await write.execute({ body: 'one', id: 'first' }, context);
-await expect(write.execute({ body: 'two', id: 'second' }, context)).rejects.toThrow(TestToolFailure);
+await expect(write.execute({ body: 'two', id: 'second' }, context)).rejects.toThrow(PluginToolFailureError);
 ```
 
 CI runs the same checks plus `prettier --check` on every push and pull request.
