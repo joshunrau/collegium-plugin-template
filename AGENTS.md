@@ -38,8 +38,7 @@ src/
   skills/<name>.md      one skill per file, name in dashed-case
 ```
 
-Put shared helpers anywhere else under `src/` and import by relative path. `src/tools/__tests__/`
-is yours to organize.
+Put shared helpers anywhere else under `src/` and import by relative path.
 
 ## Config
 
@@ -100,8 +99,13 @@ const recent = await storage.records.findMany({
 Each `src/tools/<name>.ts` default-exports `defineTool`. Its `parameters` is a Zod object. The SDK
 parses the model's call against it, so do not re-validate inside `execute`.
 
-A tool with `approval` is gated. The callback renders what the human reads before the call, and
-the tool never runs without their approval. A tool without `approval` runs on its own.
+A tool with `approval` is gated. The callback returns `{ body, presentation }`:
+
+- `body` is the string the human reads before the call.
+- `presentation` is `'verbatim'` (shown as-is) or `'collapse'` (tucked behind a control the
+  approver opens).
+
+The tool never runs without approval. A tool without `approval` runs on its own.
 
 A read tool may set `retryable: true` when a timed-out call is safe to report as a failure. Never
 mark a mutation retryable.
@@ -113,9 +117,21 @@ mark a mutation retryable.
 
 Any other throw ends the turn as an error. Use it only for programmer error.
 
+`traceDetail(args)` returns a one-line summary shown beside the tool's name in the turn's status
+post. Omit it to show the name alone.
+
 ## Skills
 
-Each `src/skills/<name>.md` is a markdown document with `title` and `description` frontmatter.
+Each `src/skills/<name>.md` is a markdown document with `title` and `description` frontmatter,
+followed by the body.
+
+Skills load lazily. The system prompt lists an agent's granted skills as a manifest of title and
+description each turn. When the agent decides a skill applies, it calls the built-in `skills::load`
+with the skill's name, and the SDK injects `# <title>\n\n<body>` into the conversation. The body
+goes in verbatim: no templating, no truncation.
+
+Write the description as the manifest bait; the agent picks a skill by its one line. Write the
+body as instructions the agent reads once it has decided.
 
 ## What the Deployment Enforces
 
