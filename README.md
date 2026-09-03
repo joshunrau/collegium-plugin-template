@@ -1,6 +1,6 @@
 # Collegium Plugin Template
 
-A starting point for a [Collegium](https://collegium.sh) plugin. A plugin is a directory of TypeScript that a deployment compiles at boot and grants to the agents that need it. This template ships a working plugin named `example` with the whole contract in place: settings, a storage collection, a gated tool, an ungated tool, a skill, and tests that run without a deployment.
+A starting point for a [Collegium](https://collegium.sh) plugin. 
 
 ## Start a Plugin
 
@@ -11,92 +11,15 @@ A starting point for a [Collegium](https://collegium.sh) plugin. A plugin is a d
    pnpm install
    ```
 
-3. Replace `example` in `package.json` and in the `config.json` snippets below with your plugin's name. Nothing else carries it.
+3. Replace `example` in `package.json` and in the `config.json` snippets below with your plugin's name.
 4. Edit `src/` until the plugin does what you need, then delete what you don't.
-
-## Layout
-
-```
-src/
-  config.ts             the settings schema and the storage collections
-  tools/<name>.ts       one tool per file, named by its filename
-  skills/<name>.md      one skill per file, granted as <plugin>::<name>
-```
-
-The deployment reads `src/config.ts`, the direct children of `src/tools/`, and the direct children of `src/skills/`. Every child of `src/tools/` must be `<snake_case>.ts` with no further extension. Every child of `src/skills/` must be `<dashed-name>.md`. A file that breaks either rule stops the deployment from booting; nothing is skipped. Subdirectories such as `src/tools/__tests__/` are yours, and the deployment ignores them. Put shared helpers anywhere else under `src/` and import them by relative path.
-
-### Config
-
-`src/config.ts` default-exports `defineConfig` with two optional keys. `settings` is the schema an agent's `toolSettings` for this plugin are parsed against. `storage` names one record collection per key, whose schema is the fields a record declares. The store stamps `id`, `createdAt`, and `updatedAt` on every record — a schema may not declare those — mints a cuid2 unless `create` is given an id, and parses every read, so a row an older schema wrote fails loudly instead of reaching a tool. Rows are scoped to your plugin.
-
-A collection handle is `create`, `findById`, `findMany`, `updateById`, and `deleteById`. `findMany` without a query returns every record in insertion order; with one it takes `limit` and a `where` that ANDs conditions over the record's own top-level scalar fields — a value for equality, `{ in: [...] }` for membership, `{ contains: '...' }` for a case-insensitive substring of a string field. An object, array, or date field is not queryable.
-
-````ts
-const recent = await storage.records.findMany({ limit: 20, where: { body: { contains: 'invoice' }, topic: 'billing' } });
-``` The `declare module` block below the config types `settings` and `storage` in every tool.
-
-### Tools
-
-Each `src/tools/<name>.ts` default-exports `defineTool`. `write.ts` is gated: `approval` renders what a human reads before the call, and the tool never runs without their approval. `read.ts` has no `approval`, so it runs without one. It is marked `retryable` because a timed-out read is safe to report as a failure. Never mark a mutation retryable.
-
-`execute` returns the text the model reads. Through `err` it raises the two failures a tool may raise itself. `err.invalidArguments` returns the message to the model, and the turn continues. `err.unresolved` ends the turn as an unconfirmed side effect. Any other throw ends the turn as an error.
-
-### Skills
-
-Each `src/skills/<name>.md` is a markdown document with `title` and `description` frontmatter. An agent granted `example::keeping-records` can load it during a turn.
-
-## What the Deployment Enforces
-
-- `dependencies` holds `@collegium/sdk` and `zod` and nothing else. Tooling goes in `devDependencies`.
-- The deployment checks each declared range against the version it carries and refuses to boot on a mismatch. The SDK is released with Collegium and shares its version, so the range you declare names the deployment you wrote for. Re-declare it when you move to a new release.
-- A plugin file imports `@collegium/sdk`, `zod` (never a subpath), `node:` builtins, and its own files by relative path. Any other bare specifier is a boot failure.
-- There is no build step. The deployment compiles your source against its own copies of the SDK and zod. The copies in your `node_modules` serve your editor, `tsc`, and your tests. `tsconfig.json` is yours alone; the deployment never reads it.
 
 ## Develop
 
 ```sh
+pnpm format    # prettier --write
 pnpm lint      # tsc, then eslint --fix
 pnpm test      # vitest
-pnpm format    # prettier --write
-````
-
-Tests live under `src/tools/__tests__/` and call a tool's `execute` directly. `createTestContext` from `@collegium/sdk/testing` builds the context a tool receives from your config: in-memory storage for every declared collection, stamped, validated on write, and parsed on read as the deployment's store does — seed it by calling `create` on the context, passing an `id` when a test needs a known one, settings parsed through your schema so defaults apply, and the `err` raisers a deployment hands out, which throw `PluginToolFailureError`. Pass `turn` in the options to change the agent, channel, or post the tool sees.
-
-```ts
-import { createTestContext, PluginToolFailureError } from '@collegium/sdk/testing';
-
-const context = createTestContext(config, { settings: { maxRecords: 1 } });
-await write.execute({ body: 'one', topic: 'chat' }, context);
-await expect(write.execute({ body: 'two', topic: 'chat' }, context)).rejects.toThrow(PluginToolFailureError);
 ```
 
 CI runs the same checks plus `prettier --check` on every push and pull request.
-
-## Install and Grant
-
-Clone the plugin into the directory `PLUGINS_ROOT` in the deployment's `.env` points at, under the plugin's name:
-
-```sh
-git clone https://github.com/you/example plugins/example
-```
-
-Declare it in `config.json`, then grant it to an agent. `"example"` grants every tool, including ones a later version adds; `"example::read"` grants one. Skills are granted separately.
-
-```json
-"plugins": ["example"],
-"agents": {
-  "clara": {
-    "tools": ["example"],
-    "toolSettings": { "example": { "maxRecords": 500 } },
-    "skills": ["example::keeping-records"]
-  }
-}
-```
-
-Restart the deployment. It refuses to start if the plugin is named but not mounted, if settings fail the schema, or if a grant names a tool nothing provides. The log names the plugin and the file.
-
-## Further Reading
-
-- [Write a Plugin](https://collegium.sh/docs/guides/write-a-plugin), the guide this template follows
-- [`@collegium/sdk`](https://www.npmjs.com/package/@collegium/sdk), the authoring surface
-- [SPEC.md §3.14](https://github.com/joshunrau/collegium/blob/main/SPEC.md), the plugin contract in full
