@@ -59,8 +59,7 @@ execute: async (args, { settings, storage }) => { /* ... */ }
 ```
 
 To make those fields infer from your schema, augment the SDK's `Register` interface with your
-config. TypeScript merges the block from anywhere in `src/`; the template keeps it beside
-`defineConfig`:
+config. 
 
 ```ts
 declare module '@collegium/sdk' {
